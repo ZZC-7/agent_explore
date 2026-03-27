@@ -1,34 +1,79 @@
 # main.py
-# 实例测试函数
 import os
 from dotenv import load_dotenv
-from llm_sdk import LLMFactory  # 导入通用LLM接口
+from llm_sdk import LLMFactory
 
-# 加载环境变量
 load_dotenv()
 
-def test_local_model():
-    print("--- 测试本地 Qwen ---")
-    llm = LLMFactory.create_llm(
-        model_name="qwen2:1.5b",
-        base_url=os.getenv("OLLAMA_URL", "http://localhost:11434/v1")
-    )
 
-    res = llm.invoke("简单介绍一下贪心算法")
-    print(f"回答: {res.content}\n")
+def select_model():
+    """让用户选择要使用的模型配置"""
+    print("\n请选择要使用的模型：")
+    print("1. [本地] Ollama (Qwen2:1.5b)")
+    print("2. [云端] DeepSeek (需配置 API Key)")
+    print("3. [自定义] 手动输入参数")
 
-def test_deepseek():
-    print("--- 测试云端 DeepSeek ---")
-    llm = LLMFactory.create_llm(
-        model_name="deepseek-chat",
-        api_key=os.getenv("DEEPSEEK_API_KEY"),
-        base_url=os.getenv("DEEPSEEK_URL")
-    )
+    choice = input("\n请输入编号 (默认 1): ").strip() or "1"
 
-    res = llm.invoke("写一段解决八皇后问题的Python代码")
-    print(f"回答: {res.content}")
-    print("（此处需配置有效API Key才能运行）\n")
+    if choice == "1":
+        return {
+            "model_name": os.getenv("OLLAMA_MODEL", "qwen2:1.5b"),
+            "base_url": os.getenv("OLLAMA_URL", "http://localhost:11434/v1"),
+            "api_key": "ollama"
+        }
+    elif choice == "2":
+        return {
+            "model_name": os.getenv("DEEPSEEK_MODEL", "deepseek-chat"),
+            "base_url": os.getenv("DEEPSEEK_URL"),
+            "api_key": os.getenv("DEEPSEEK_API_KEY")
+        }
+    else:
+        # 允许用户手动输入
+        name = input("请输入模型名称: ")
+        url = input("请输入 Base URL: ")
+        key = input("请输入 API Key: ")
+        return {"model_name": name, "base_url": url, "api_key": key}
+
+
+def start_chat():
+    # 1. 用户选择模型
+    config = select_model()
+
+    # 2. 初始化 LLM 实例
+    try:
+        llm = LLMFactory.create_llm(
+            model_name=config["model_name"],
+            base_url=config["base_url"],
+            api_key=config["api_key"],
+            streaming=True
+        )
+        print(f"\n系统 > 已成功连接到模型: {config['model_name']}")
+    except Exception as e:
+        print(f"\n错误 > 初始化失败: {e}")
+        return
+
+    print("========================================")
+    print("   对话开始 (输入 'exit' 退出)   ")
+    print("========================================")
+
+    # 3. 对话循环
+    while True:
+        user_prompt = input("\n用户 > ")
+        if user_prompt.lower() in ['exit', 'quit', '退出', 'q']:
+            print("再见！")
+            break
+
+        if not user_prompt.strip():
+            continue
+
+        print("AI   > ", end="", flush=True)
+        try:
+            for chunk in llm.stream(user_prompt):
+                print(chunk.content, end="", flush=True)
+            print("\n")
+        except Exception as e:
+            print(f"\n发生错误: {e}")
+
 
 if __name__ == "__main__":
-    test_local_model()  # 测试本地模型
-    test_deepseek()     # 测试云端API
+    start_chat()
