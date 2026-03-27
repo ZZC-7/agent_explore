@@ -8,7 +8,6 @@
 
 2\. 启动本地模型：`ollama run qwen2:1.5b`
 
-3\. 配置 `.env` 文件 输入需要调用的模型的api-key
+3\. 配置 `.env` 文件 设置需要调用的模型的api-key和URL
 
-4\. 运行测试：`python main.py`
-
+4\. 运行测试：`python main.py` 可修改测试内容和调用模型
