@@ -1,8 +1,13 @@
 import os
+import warnings
+from transformers import logging as hf_logging
 from langchain_community.document_loaders import PyPDFLoader, DirectoryLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
+
+warnings.filterwarnings("ignore")
+hf_logging.set_verbosity_error()
 
 class RAGService:
     def __init__(self, data_path="./my_knowledge", index_path="./faiss_index"):
